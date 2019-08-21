@@ -43,10 +43,8 @@
 #include <livox_ros_driver/CustomMsg.h>
 #include <pcl_ros/point_cloud.h>
 
-
-/* const varible -------------------------------------------------------------------------------- */
 /* user area */
-const uint32_t kPublishIntervalMs           = 50;          // unit:ms
+uint32_t publishIntervalMs           = 50;          // unit:ms
 
 /* const parama */
 const uint32_t kMaxPointPerEthPacket        = 100;
@@ -601,7 +599,7 @@ void GetLidarData(uint8_t handle, LivoxEthPacket *data, uint32_t data_num, void 
 
   StoragePacketQueue *p_queue = &lidars[handle].packet_queue;
   if (nullptr == p_queue->storage_packet) {
-     uint32_t queue_size = CalculatePacketQueueSize(kPublishIntervalMs, lidars[handle].info.type);
+     uint32_t queue_size = CalculatePacketQueueSize(publishIntervalMs, lidars[handle].info.type);
      InitQueue(p_queue, queue_size);
   }
 
@@ -838,6 +836,15 @@ int main(int argc, char **argv) {
     ROS_INFO("No valid bd input, switch to automatic connection mode!");
   }
 
+  /* ros related */
+  ros::init(argc, argv, "livox_lidar_publisher");
+  ros::NodeHandle livox_node;
+
+  int msg_type, publish_interval;
+  livox_node.getParam("livox_msg_type", msg_type);
+  livox_node.getParam("publish_interval", publish_interval);
+  publishIntervalMs = std::max(2, publish_interval);
+
   memset(lidars, 0, sizeof(lidars));
   SetBroadcastCallback(OnDeviceBroadcast);
   SetDeviceStateUpdateCallback(OnDeviceChange);
@@ -847,12 +854,6 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  /* ros related */
-  ros::init(argc, argv, "livox_lidar_publisher");
-  ros::NodeHandle livox_node;
-
-  int msg_type;
-  livox_node.getParam("livox_msg_type", msg_type);
   if (kPointCloud2Msg == msg_type) {
     cloud_pub = livox_node.advertise<sensor_msgs::PointCloud2>("livox/lidar", \
                                                        kMaxEthPacketQueueSize);
@@ -864,7 +865,7 @@ int main(int argc, char **argv) {
   }
 
   ros::Time::init();
-  ros::Rate r(1000.0 / kPublishIntervalMs); // 1000.0 / x = hz
+  ros::Rate r(1000.0 / publishIntervalMs); // 1000.0 / x = hz
   while (ros::ok()) {
     PollPointcloudData2(msg_type);
     r.sleep();
