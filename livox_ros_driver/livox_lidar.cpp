@@ -401,13 +401,13 @@ static uint32_t PublishPointcloud2(StoragePacketQueue* queue, uint32_t packet_nu
   uint64_t last_timestamp = 0;
   uint32_t published_packet = 0;
   uint32_t point_num = 0;
-  
+
   /* init point cloud data struct */
   PointCloud::Ptr cloud (new PointCloud);
   cloud->header.frame_id = "livox_frame";
   cloud->height = 1;
   cloud->width  = 0;
-  
+
   // add pointcloud
   StoragePacket storage_packet;
   while (published_packet <  packet_num) {
@@ -424,7 +424,7 @@ static uint32_t PublishPointcloud2(StoragePacketQueue* queue, uint32_t packet_nu
 
     if (!cloud->width) {
       //cloud->header.stamp = ros::Time(timestamp/1000000000.0); // to ros time stamp
-      
+
       cloud->header.stamp = timestamp/1000.0; // to ros time stamp
       ROS_DEBUG("[%d]:%ld us", handle, timestamp);
     }
@@ -437,7 +437,7 @@ static uint32_t PublishPointcloud2(StoragePacketQueue* queue, uint32_t packet_nu
       point.z = raw_points->z/1000.0f;
       point.intensity = (float)raw_points->reflectivity;
       cloud->points.push_back(point);
-  
+
       ++raw_points;
       ++point_num;
     }
