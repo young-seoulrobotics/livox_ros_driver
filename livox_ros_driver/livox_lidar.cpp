@@ -454,6 +454,54 @@ static uint32_t PublishPointcloud2(StoragePacketQueue* queue, uint32_t packet_nu
   return published_packet;
 }
 
+/* for pointcloud convert process */
+static uint32_t AccumulatePointcloud2(PointCloud& cloud, StoragePacketQueue* queue, uint32_t packet_num, uint8_t handle) {
+  uint64_t timestamp = 0;
+  uint64_t last_timestamp = 0;
+  uint32_t published_packet = 0;
+  uint32_t point_num = 0;
+
+  // add pointcloud
+  StoragePacket storage_packet;
+  while (published_packet <  packet_num) {
+    QueueProPop(queue, &storage_packet);
+    LivoxEthPacket* raw_packet = reinterpret_cast<LivoxEthPacket *>(storage_packet.raw_data);
+    LivoxRawPoint* raw_points = reinterpret_cast<LivoxRawPoint *>(raw_packet->data);
+
+    timestamp = GetStoragePacketTimestamp(&storage_packet);
+    if (published_packet && \
+        ((timestamp - last_timestamp) > kMaxPacketTimeGap)) {
+      ROS_INFO("packet loss : %ld", timestamp);
+      break;
+    }
+
+    if (!cloud.width) {
+      //cloud->header.stamp = ros::Time(timestamp/1000000000.0); // to ros time stamp
+
+      cloud.header.stamp = timestamp/1000.0; // to ros time stamp
+      ROS_DEBUG("[%d]:%ld us", handle, timestamp);
+    }
+    cloud.width += storage_packet.point_num;
+
+    for (uint32_t i = 0; i < storage_packet.point_num; i++) {
+      pcl::PointXYZI point;
+      point.x = raw_points->x/1000.0f;
+      point.y = raw_points->y/1000.0f;
+      point.z = raw_points->z/1000.0f;
+      point.intensity = (float)raw_points->reflectivity;
+      cloud.points.push_back(point);
+
+      ++raw_points;
+      ++point_num;
+    }
+
+    QueuePopUpdate(queue);
+    last_timestamp = timestamp;
+    ++published_packet;
+  }
+
+  return published_packet;
+}
 
 /* for pointcloud convert process */
 static uint32_t PublishCustomPointcloud(StoragePacketQueue* queue, uint32_t packet_num,\
@@ -586,6 +634,34 @@ void PollPointcloudData(int msg_type) {
       }
     }
   }
+}
+
+void PollPointcloudData2(int msg_type) {
+  /* init point cloud data struct */
+  PointCloud::Ptr cloud (new PointCloud);
+  cloud->header.frame_id = "livox_frame";
+  cloud->height = 1;
+  cloud->width  = 0;
+
+  for (int i = 0; i < kMaxLidarCount; i++) {
+      StoragePacketQueue *p_queue  = &lidars[i].packet_queue;
+
+    if (kDeviceStateSampling != lidars[i].device_state) {
+      continue;
+    }
+
+    while (!QueueIsEmpty(p_queue)) {
+      //ROS_DEBUG("%d %d %d %d\r\n", i, p_queue->rd_idx, p_queue->wr_idx, QueueUsedSize(p_queue));
+      uint32_t used_size = QueueUsedSize(p_queue);
+      if (kPointCloud2Msg == msg_type) {
+        if (used_size == AccumulatePointcloud2(*cloud, p_queue, used_size, i)) {
+          break;
+        }
+      }
+    }
+  }
+
+  cloud_pub.publish(cloud);
 }
 
 /** add bd to total_broadcast_code */
@@ -790,7 +866,7 @@ int main(int argc, char **argv) {
   ros::Time::init();
   ros::Rate r(1000.0 / kPublishIntervalMs); // 1000.0 / x = hz
   while (ros::ok()) {
-    PollPointcloudData(msg_type);
+    PollPointcloudData2(msg_type);
     r.sleep();
   }
 
