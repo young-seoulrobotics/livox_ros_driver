@@ -842,7 +842,7 @@ int main(int argc, char **argv) {
 
   int msg_type, publish_interval;
   livox_node.getParam("livox_msg_type", msg_type);
-  livox_node.getParam("publish_interval", publish_interval);
+  livox_node.getParam("livox_lidar_publisher/publish_interval", publish_interval);
   publishIntervalMs = std::max(2, publish_interval);
 
   memset(lidars, 0, sizeof(lidars));

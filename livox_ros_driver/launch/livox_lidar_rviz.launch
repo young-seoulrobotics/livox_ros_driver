@@ -1,13 +1,13 @@
 <launch>
+	<arg name="bd_list" default="100000000000000"/>
+	<param name="livox_msg_type" type="int" value="0"/>
+	<arg name="publish_interval" default="50"/>
 
-    <arg name="bd_list" default="100000000000000"/>
-    <param name="livox_msg_type" value="0"/>
-    <param name="publish_interval" value="50"/>
-
-    <node name="livox_lidar_publisher" pkg="livox_ros_driver"
-	      type="livox_lidar_node" required="true"
-	      output="screen" args="$(arg bd_list)"/>
+	<node name="livox_lidar_publisher" type="livox_lidar_node" pkg="livox_ros_driver"
+			required="true" output="screen" args="$(arg bd_list)">
+		<param name="publish_interval" type="int" value="$(arg publish_interval)"/>
+	</node>
 
 	<node name="rviz" pkg="rviz" type="rviz" respawn="true"
-	      args="-d $(find livox_ros_driver)/config/display_lidar_points.rviz"/>
+			args="-d $(find livox_ros_driver)/config/display_lidar_points.rviz"/>
 </launch>
