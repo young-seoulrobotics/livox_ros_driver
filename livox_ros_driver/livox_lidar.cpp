@@ -840,10 +840,17 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "livox_lidar_publisher");
   ros::NodeHandle livox_node;
 
-  int msg_type, publish_interval;
+  int msg_type, frequency;
   livox_node.getParam("livox_msg_type", msg_type);
-  livox_node.getParam("livox_lidar_publisher/publish_interval", publish_interval);
-  publishIntervalMs = std::max(2, publish_interval);
+  livox_node.getParam("livox_lidar_publisher/frequency", frequency);
+
+  publishIntervalMs = 1000 / frequency;
+  if (publishIntervalMs < kPublishIntervalLowerLimitMs) {
+    publishIntervalMs = kPublishIntervalLowerLimitMs;
+  }
+  else if (publishIntervalMs > kPublishIntervalUpperLimitMs) {
+    publishIntervalMs = kPublishIntervalUpperLimitMs;
+  }
 
   memset(lidars, 0, sizeof(lidars));
   SetBroadcastCallback(OnDeviceBroadcast);
