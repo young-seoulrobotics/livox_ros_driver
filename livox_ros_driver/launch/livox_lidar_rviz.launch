@@ -1,11 +1,11 @@
 <launch>
 	<arg name="bd_list" default="100000000000000"/>
-	<arg name="frequency" default="20"/>
+	<arg name="frame_rate" default="500"/>
 	<param name="livox_msg_type" type="int" value="0"/>
 
 	<node name="livox_lidar_publisher" type="livox_lidar_node" pkg="livox_ros_driver"
 			required="true" output="screen" args="$(arg bd_list)">
-		<param name="frequency" type="int" value="$(arg frequency)"/>
+		<param name="frame_rate" type="int" value="$(arg frame_rate)"/>
 	</node>
 
 	<node name="rviz" pkg="rviz" type="rviz" respawn="true"

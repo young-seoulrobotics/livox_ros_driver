@@ -840,11 +840,11 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "livox_lidar_publisher");
   ros::NodeHandle livox_node;
 
-  int msg_type, frequency;
+  int msg_type, frame_rate;
   livox_node.getParam("livox_msg_type", msg_type);
-  livox_node.getParam("livox_lidar_publisher/frequency", frequency);
+  livox_node.getParam("livox_lidar_publisher/frame_rate", frame_rate);
 
-  publishIntervalMs = 1000 / frequency;
+  publishIntervalMs = 1000 / frame_rate;
   if (publishIntervalMs < kPublishIntervalLowerLimitMs) {
     publishIntervalMs = kPublishIntervalLowerLimitMs;
   }
