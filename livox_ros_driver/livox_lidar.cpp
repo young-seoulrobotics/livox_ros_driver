@@ -581,10 +581,6 @@ void GetLidarData(uint8_t handle, LivoxEthPacket *data, uint32_t data_num, void 
     return;
   }
 
-  auto ts = std::chrono::system_clock::now();
-  ROS_INFO_NAMED("livox", "[raw_packet]: %lu us",
-    std::chrono::time_point_cast<std::chrono::microseconds>(ts).time_since_epoch().count());
-
   LidarPacketStatistic *packet_statistic = &lidars[handle].statistic_info;
   uint64_t cur_timestamp = *((uint64_t *)(lidar_pack->timestamp));
   if (lidar_pack->timestamp_type == kTimestampTypePps) {
@@ -645,6 +641,10 @@ void PollPointcloudData2(int msg_type) {
   cloud->height = 1;
   cloud->width  = 0;
 
+  auto ts = std::chrono::system_clock::now();
+  ROS_INFO("[before converting into livox/lidar]: %lu us",
+    std::chrono::time_point_cast<std::chrono::microseconds>(ts).time_since_epoch().count());
+
   for (int i = 0; i < kMaxLidarCount; i++) {
       StoragePacketQueue *p_queue  = &lidars[i].packet_queue;
 
@@ -663,8 +663,8 @@ void PollPointcloudData2(int msg_type) {
     }
   }
 
-  auto ts = std::chrono::system_clock::now();
-  ROS_INFO_NAMED("livox", "[livox/lidar]: %lu us",
+  ts = std::chrono::system_clock::now();
+  ROS_INFO("[before publishing livox/lidar]: %lu us",
     std::chrono::time_point_cast<std::chrono::microseconds>(ts).time_since_epoch().count());
 
   cloud_pub.publish(cloud);
